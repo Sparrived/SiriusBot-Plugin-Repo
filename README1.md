@@ -3,7 +3,7 @@
 欢迎来到 **SiriusBot-Neko 的插件库**!  
 SiriusBot-Neko 是基于 [Ncatbot](https://github.com/liyihao1110/ncatbot) 的 QQ 机器人实现。 
 
-本仓库是适用于 SiriusBot-Neko （或任何基于Ncatbot开发的机器人） 的各类插件，旨在为用户提供丰富的功能扩展和便捷的使用体验。插件理论兼容 **Ncatbot >= 4.x.x** 版本的实现。  
+本仓库是适用于 SiriusBot-Neko （或任何基于Ncatbot开发的机器人） 的各类插件，旨在为用户提供丰富的功能扩展和便捷的使用体验。插件理论兼容 **Ncatbot >= 4.x.x** 版本的QQ机器人实现。  
 
 项目借鉴了 Minecraft 的各种设计思路。通过I18nMixin可以在文本文件内快速调整机器人的输出内容，无需调整代码即可轻松实现自定义。
 
