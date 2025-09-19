@@ -1,7 +1,5 @@
-from ncatbot.plugin_system import NcatBotPlugin
 from ncatbot.plugin_system import command_registry
 from ncatbot.core.event import BaseMessageEvent, BaseSender
-from ncatbot.utils import get_log
 from datetime import datetime
 from .utils import fetch_png
 from sirius_core import SiriusPlugin
@@ -16,16 +14,26 @@ class DailyNews(SiriusPlugin):
 
     async def on_load(self):
         SiriusPlugin.on_load(self)
+        # -------- 注册config --------
         self.register_config("api_url", "https://uapis.cn/api/v1/daily/news-image", "每日新闻API地址")
+        self.register_config("push_time", ["07:30"], "每日推送时间，格式为 HH:MM，支持多个时间点", list)
+
         self.api_url = self.config.get("api_url", "")
         if not self.api_url:
-            self._log.error("API地址未在config中配置，插件即将卸载。")
-            
-        self.add_scheduled_task(
-            job_func=self._push,
-            name="daily_news",
-            interval="07:30"
-        )
+            self._log.error("API地址未在config中配置，插件无法正常运行。")
+            return
+        
+        self.push_times = self.config.get("push_time", [])
+        if not self.push_times or not all(isinstance(t, str) and len(t) == 5 and t[2] == ':' for t in self.push_times):
+            self._log.warning("推送时间配置错误，插件将不创建自动任务。")
+        else:
+            for t in self.push_times:
+                self.add_scheduled_task(
+                    job_func=self._push,
+                    name=f"daily_news_{t.replace(':', '')}",
+                    interval=t
+                )
+                self._log.info(f"已添加每日新闻推送任务，时间点：{t}。")
     
     @command_registry.command("推送新闻", description="推送每日新闻")
     async def cmd_news(self, event: BaseMessageEvent):

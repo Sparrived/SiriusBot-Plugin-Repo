@@ -2,12 +2,14 @@
 
 欢迎来到 **SiriusBot-Neko 的插件库**!  
 SiriusBot-Neko 是基于 [Ncatbot](https://github.com/liyihao1110/ncatbot) 的 QQ 机器人实现。
-本仓库收集和整理了适用于 SiriusBot-Neko 的各类插件，旨在为用户提供丰富的功能扩展和便捷的使用体验。
+本仓库是由我编写的适用于 SiriusBot-Neko 的各类插件，旨在为用户提供丰富的功能扩展和便捷的使用体验。插件理论兼容 **Ncatbot >= 4.x.x** 版本的实现。
+插件编写模式借鉴了Minecraft的模组写法。
 
 ## 仓库内容
 
 - 多种实用插件，满足不同场景需求
-- 插件均经过测试，易于集成和使用
+- 插件通过 SiriusCore 提供的 I18nMixin，可在文本文件内高度自定义输出文本，无需修改源代码
+- 插件均挂载于SiriusBot-Neko，经过大量测试
 - 持续更新，欢迎贡献和反馈
 
 ## 插件列表
@@ -15,7 +17,7 @@ SiriusBot-Neko 是基于 [Ncatbot](https://github.com/liyihao1110/ncatbot) 的 Q
 本仓库目前包含以下插件：
 
 ### 核心插件
-### sirius_core
+### SiriusCore
 核心功能插件，提供SiriusBot插件生态的开发基础接口、数据处理等核心能力。
 
 ### 生活类插件
@@ -25,7 +27,6 @@ SiriusBot-Neko 是基于 [Ncatbot](https://github.com/liyihao1110/ncatbot) 的 Q
 ### 游戏类插件
 #### McStatus
 Minecraft 服务器状态查询插件，实时获取服务器在线人数、延迟等信息，方便游戏服务器管理。
-
 
 ### 功能类插件
 #### IPChecker

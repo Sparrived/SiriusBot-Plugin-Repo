@@ -3,7 +3,7 @@ from ncatbot.plugin_system import NcatBotEvent
 from ncatbot.plugin_system import admin_only
 from ncatbot.plugin_system import command_registry
 from ncatbot.core.event import BaseMessageEvent, BaseSender
-from .curd import HubCURD
+from .curd import SqlCURD
 from .utils import msg_classify
 from .sirius_plugin import SiriusPlugin
 from .data_process import init_database, init_filetext
@@ -11,10 +11,12 @@ from .data_process import init_database, init_filetext
 class SiriusCore(SiriusPlugin):
     name = "SiriusCore"
     version = "1.1.0"
-    description = "SiriusBot 及其各项插件的核心桥接器."
+    description = "SiriusBot 及其各项插件的核心桥接插件."
     dependencies = {}
 
     async def on_load(self):
+        super().on_load()
+
         # -------- 注册config --------
         self.register_config("data_save_type", "sqlserver", "数据保存方式，支持 sqlserver/textfile")
         self.register_config("sql_settings",
@@ -25,19 +27,25 @@ class SiriusCore(SiriusPlugin):
                                 "UID": "sa",
                                 "PWD": "yourStrong(!)Password"
                               }, 
-                              "数据库连接相关参数，仅在 data_save_type 为 sqlserver 时有效")
+                              "数据库连接相关参数，仅在 data_save_type 为 sqlserver 时有效",
+                              dict
+                            )
         
         # -------- 检查config --------
         result_msg, is_valid = self._check_config(self.config.get("data_save_type", None))
         if not is_valid:
-            self._log.error(f"配置错误：{result_msg}，插件不再继续运行。")
+            self._log.error(f"配置错误：{result_msg}，插件不再继续初始化。")
             return
-        
 
-
-        self.curd = HubCURD(self.config.get("conn", None))
-        self.curd.ensure_table()
-        self._log.info("数据库连接成功。")
+        try:
+            self.curd = SqlCURD(result_msg)
+        except:
+            self.curd = None
+            
+        if self.curd:
+            self._log.info("数据库连接成功。")
+        else:
+            self._log.warning("数据库未正确连接。")
         self.register_handler("SubscriptionHub.QuerySubscribedGroups", self.on_query_subscribed_groups)
         self._log.info("开始监听 SubscriptionHub.QuerySubscribedGroups.")
         self.register_handler("SubscriptionHub.QuerySubscribedPrivate", self.on_query_subscribed_private)
@@ -71,30 +79,32 @@ class SiriusCore(SiriusPlugin):
         
         return result_msg, is_valid
 
-
+    # -------- 注册指令 --------
 
     @admin_only
     @command_registry.command("订阅", description="订阅插件")
     async def cmd_sub(self, msg: BaseMessageEvent, plugin_name : str):
+        if not plugin_name in self.get_plugin():
+            await self.message_sender.reply_by_message_event(msg, "command.plugin_not_found", [plugin_name])
         id, target = msg_classify(msg)
         self.curd.add_sub(plugin_name, id, target)
-        await msg.reply(text=f"嗨嗨嗨~我知道了！这里以后开始执行 {plugin_name} 的功能喵！=w=")
+        await self.message_sender.reply_by_message_event(msg, "command.subscribe_done", [plugin_name])
 
     @admin_only
     @command_registry.command("取消订阅", description="取消订阅插件")
     async def cmd_unsub(self, msg: BaseMessageEvent, plugin_name : str):
         id, target = msg_classify(msg)
         self.curd.remove_sub(plugin_name, id, target)
-        await msg.reply(text=f"蒜鸟蒜鸟,这里以后不再执行 {plugin_name} 的功能了喵！＞﹏＜")
+        await self.message_sender.reply_by_message_event(msg, "command.subscribe_cancel", [plugin_name])
 
     @command_registry.command("插件订阅列表", description="查看已经订阅的插件列表")
     async def cmd_list(self, msg: BaseMessageEvent):
         id, target = msg_classify(msg)
         plugins = self.curd.list_by_target_id(id, target)
         if not plugins:
-            await msg.reply(text="这里竟然没有任何插件订阅喵，这让我显得很没有用武之地喵！╰（‵□′）╯")
+            await self.message_sender.reply_by_message_event(msg, "command.list_no_subscribed_plugin")
         else:
-            await msg.reply(text="这些插件功能已经启动了喵！\\(￣︶￣*\\))\n" + "\n".join(plugins))
+            await self.message_sender.reply_by_message_event(msg, "command.list_subscribed_plugins", "\n".join(plugins))
 
     async def on_query_subscribed_groups(self, event : NcatBotEvent):
         plugin = event.data["plugin"]

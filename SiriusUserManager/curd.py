@@ -1,10 +1,8 @@
-# curd.py
 import pyodbc
-from shared.conn import DEFAULT_CONN_STR
 
 class UserCURD:
-    def __init__(self, conn_str: str = None):
-        self.conn_str = conn_str or DEFAULT_CONN_STR
+    def __init__(self, conn_str: str):
+        self.conn_str = conn_str
 
     def _get_conn(self):
         # 文档：上下文管理器封装

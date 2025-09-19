@@ -1,9 +1,12 @@
 import pyodbc
-from shared.conn import DEFAULT_CONN_STR
-
-class HubCURD:
-    def __init__(self, conn_str=None):
-        self.conn_str = conn_str or DEFAULT_CONN_STR
+class SqlCURD:
+    def __init__(self, conn_str : str):
+        self.conn_str = conn_str
+        try:
+            self.ensure_table()
+        except:
+            raise Exception("SqlCURD初始化失败")
+        
 
     def _get_conn(self):
         return pyodbc.connect(self.conn_str, autocommit=True)

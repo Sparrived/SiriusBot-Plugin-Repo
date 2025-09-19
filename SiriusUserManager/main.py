@@ -13,17 +13,18 @@ class SiriusUserManager(BasePlugin):
     _log = get_log("SiriusUserManager")
 
     async def on_load(self):
-        self.curd = UserCURD(self.config.get("conn", None))
-        self.curd.ensure_table()
-        self._log.info("数据库连接成功。")
+        pass
+        # self.curd = UserCURD(self.config.get("conn", None))
+        # self.curd.ensure_table()
+        # self._log.info("数据库连接成功。")
 
-        self.register_user_func("reg", self.cmd_reg, prefix="#注册")
-        self.register_user_func("rename", self.cmd_rename, prefix="#更名")
+        # self.register_user_func("reg", self.cmd_reg, prefix="#注册")
+        # self.register_user_func("rename", self.cmd_rename, prefix="#更名")
 
-        self.register_admin_func("sql_add", self.cmd_add, prefix="/注册")
-        self.register_admin_func("sql_del", self.cmd_del, prefix="/注销")
-        self.register_admin_func("sql_update", self.cmd_update, prefix="/更新用户")
-        self.register_admin_func("sql_list", self.cmd_list, prefix="/用户列表")
+        # self.register_admin_func("sql_add", self.cmd_add, prefix="/注册")
+        # self.register_admin_func("sql_del", self.cmd_del, prefix="/注销")
+        # self.register_admin_func("sql_update", self.cmd_update, prefix="/更新用户")
+        # self.register_admin_func("sql_list", self.cmd_list, prefix="/用户列表")
 
 
     async def cmd_reg(self, msg: PrivateMessage | GroupMessage):
