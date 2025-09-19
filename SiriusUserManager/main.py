@@ -1,30 +1,29 @@
-# main.py
-from ncatbot.plugin import BasePlugin, CompatibleEnrollment
 from ncatbot.core import PrivateMessage, GroupMessage
 from .curd import UserCURD
 from ncatbot.utils import get_log
+from sirius_core import SiriusCoreAPI, SiriusPlugin
 
-bot = CompatibleEnrollment
 
-
-class SiriusUserManager(BasePlugin):
+class SiriusUserManager(SiriusPlugin):
     name = "SiriusUserManager"
     version = "1.0.0"
-    _log = get_log("SiriusUserManager")
+    description = "SiriusBot用于用户管理的插件"
 
     async def on_load(self):
-        pass
-        # self.curd = UserCURD(self.config.get("conn", None))
-        # self.curd.ensure_table()
-        # self._log.info("数据库连接成功。")
+        super().loading()
+        self.curd = UserCURD(SiriusCoreAPI.database)
+        if not self.curd:
+            self._log.error("数据库链接失败。")
+        else:
+            self._log.info("数据库连接成功。")
 
-        # self.register_user_func("reg", self.cmd_reg, prefix="#注册")
-        # self.register_user_func("rename", self.cmd_rename, prefix="#更名")
+        self.register_user_func("reg", self.cmd_reg, prefix="#注册")
+        self.register_user_func("rename", self.cmd_rename, prefix="#更名")
 
-        # self.register_admin_func("sql_add", self.cmd_add, prefix="/注册")
-        # self.register_admin_func("sql_del", self.cmd_del, prefix="/注销")
-        # self.register_admin_func("sql_update", self.cmd_update, prefix="/更新用户")
-        # self.register_admin_func("sql_list", self.cmd_list, prefix="/用户列表")
+        self.register_admin_func("sql_add", self.cmd_add, prefix="/注册")
+        self.register_admin_func("sql_del", self.cmd_del, prefix="/注销")
+        self.register_admin_func("sql_update", self.cmd_update, prefix="/更新用户")
+        self.register_admin_func("sql_list", self.cmd_list, prefix="/用户列表")
 
 
     async def cmd_reg(self, msg: PrivateMessage | GroupMessage):

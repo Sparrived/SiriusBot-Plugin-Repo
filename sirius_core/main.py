@@ -2,11 +2,14 @@ from typing import Optional
 from ncatbot.plugin_system import NcatBotEvent
 from ncatbot.plugin_system import admin_only
 from ncatbot.plugin_system import command_registry
-from ncatbot.core.event import BaseMessageEvent, BaseSender
+from ncatbot.core.event import BaseMessageEvent
 from .curd import SqlCURD
 from .utils import msg_classify
 from .sirius_plugin import SiriusPlugin
 from .data_process import init_database, init_filetext
+from .api import SiriusCoreAPI
+
+_update_api = SiriusCoreAPI._update_attr
 
 class SiriusCore(SiriusPlugin):
     name = "SiriusCore"
@@ -14,9 +17,8 @@ class SiriusCore(SiriusPlugin):
     description = "SiriusBot 及其各项插件的核心桥接插件."
     dependencies = {}
 
-    async def on_load(self):
-        super().on_load()
-
+    def on_load(self):
+        super().loading()
         # -------- 注册config --------
         self.register_config("data_save_type", "sqlserver", "数据保存方式，支持 sqlserver/textfile")
         self.register_config("sql_settings",
@@ -41,11 +43,19 @@ class SiriusCore(SiriusPlugin):
             self.curd = SqlCURD(result_msg)
         except:
             self.curd = None
-            
+
         if self.curd:
             self._log.info("数据库连接成功。")
         else:
             self._log.warning("数据库未正确连接。")
+
+        # -------- 向api提交数据 --------
+        try:
+            _update_api("database", result_msg)
+            _update_api("complete", True) # 确保api数据提交完毕
+        except Exception as e:
+            self._log.error(f"向api提交数据失败。{e}",)
+
         self.register_handler("SubscriptionHub.QuerySubscribedGroups", self.on_query_subscribed_groups)
         self._log.info("开始监听 SubscriptionHub.QuerySubscribedGroups.")
         self.register_handler("SubscriptionHub.QuerySubscribedPrivate", self.on_query_subscribed_private)
@@ -80,10 +90,10 @@ class SiriusCore(SiriusPlugin):
         return result_msg, is_valid
 
     # -------- 注册指令 --------
-
     @admin_only
     @command_registry.command("订阅", description="订阅插件")
     async def cmd_sub(self, msg: BaseMessageEvent, plugin_name : str):
+        """在群/私聊中订阅插件功能"""
         if not plugin_name in self.get_plugin():
             await self.message_sender.reply_by_message_event(msg, "command.plugin_not_found", [plugin_name])
         id, target = msg_classify(msg)
@@ -93,12 +103,14 @@ class SiriusCore(SiriusPlugin):
     @admin_only
     @command_registry.command("取消订阅", description="取消订阅插件")
     async def cmd_unsub(self, msg: BaseMessageEvent, plugin_name : str):
+        """在群/私聊中取消订阅某一插件"""
         id, target = msg_classify(msg)
         self.curd.remove_sub(plugin_name, id, target)
         await self.message_sender.reply_by_message_event(msg, "command.subscribe_cancel", [plugin_name])
 
     @command_registry.command("插件订阅列表", description="查看已经订阅的插件列表")
     async def cmd_list(self, msg: BaseMessageEvent):
+        """查看当前群/私聊已经订阅的插件列表"""
         id, target = msg_classify(msg)
         plugins = self.curd.list_by_target_id(id, target)
         if not plugins:
@@ -106,6 +118,7 @@ class SiriusCore(SiriusPlugin):
         else:
             await self.message_sender.reply_by_message_event(msg, "command.list_subscribed_plugins", "\n".join(plugins))
 
+    #------- 订阅处理函数 --------
     async def on_query_subscribed_groups(self, event : NcatBotEvent):
         plugin = event.data["plugin"]
         subscribed = self.curd.list_by_plugin_groups(plugin)

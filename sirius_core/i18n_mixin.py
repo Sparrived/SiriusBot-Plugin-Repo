@@ -4,7 +4,7 @@ from typing import Iterable, LiteralString, Optional, final
 from ncatbot.core import BaseMessageEvent
 
 class I18nMixin:
-    """国际化混入类，用于加载和获取多语言资源"""
+    """国际化混入类，用于加载和获取多语言资源(主要用于高度自定义)"""
 
     _translations : dict
 
@@ -38,7 +38,7 @@ class I18nMixin:
             return json.load(f)
         
     @final
-    def _translate(self, key: str, args: Optional[Iterable] = None) -> str:
+    def _translate(self, key: str, args: Optional[Iterable[LiteralString]] = None) -> str:
         """翻译相关句式"""
         tag = f"{getattr(self, "name", __class__.__name__)}.{key}"
         text = self._translations.get(tag, tag)
@@ -55,13 +55,13 @@ class MessageSendHelper:
         self._i18n = i18n
     
     @final
-    async def reply_by_message_event(self, msg: BaseMessageEvent, key: str, args: Iterable[str] | str | None = None, **kargs) -> None:
+    async def reply_by_message_event(self, msg: BaseMessageEvent, key: str, args: Iterable[LiteralString] | LiteralString | None = None, **kargs) -> None:
         """通过BaseMessageEvent回复文本信息。"""
         text = self._i18n._translate(key, [args]) if isinstance(args, str) else self._i18n._translate(key, args)
         await msg.reply(text=text, **kargs)
 
     @final
-    def reply_by_message_event_sync(self, msg: BaseMessageEvent, key: str, args: Iterable[str] | str | None = None, **kargs) -> None:
+    def reply_by_message_event_sync(self, msg: BaseMessageEvent, key: str, args: Iterable[LiteralString] | LiteralString | None = None, **kargs) -> None:
         """通过BaseMessageEvent回复文本信息，同步版本。"""
         text = self._i18n._translate(key, [args]) if isinstance(args, str) else self._i18n._translate(key, args)
         msg.reply_sync(text=text, **kargs)

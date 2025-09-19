@@ -3,6 +3,7 @@ import pyodbc
 class UserCURD:
     def __init__(self, conn_str: str):
         self.conn_str = conn_str
+        self.ensure_table()
 
     def _get_conn(self):
         # 文档：上下文管理器封装

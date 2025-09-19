@@ -17,13 +17,13 @@ def init_database(sql_settings : dict, sql_type : str) -> tuple[str, bool]:
     # TODO:未来可以支持更多的sql数据保存方式
     if sql_type == "sqlserver":
         if not sql_settings:
-            result_msg = "检测到data_save_type为sqlserver,但未在config中配置数据库连接参数"
+            result_msg = "检测到data_save_type为sqlserver, 但未在config中配置数据库连接参数"
             return result_msg, False
         required_keys = {"server", "port", "database", "UID", "PWD"}
         if not all(key in sql_settings for key in required_keys):
             result_msg = "数据库连接参数不完整，缺少必要字段"
             return result_msg, False
-        result_msg = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={sql_settings['server']},{str(sql_settings['port'])};DATABASE={sql_settings['database']};UID={sql_settings['UID']};PWD={sql_settings['PWD']}"
+        result_msg = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={sql_settings['server']},{sql_settings['port']};DATABASE={sql_settings['database']};UID={sql_settings['UID']};PWD={sql_settings['PWD']}"
         return result_msg, True
     
 def init_filetext(file_settings : dict) -> tuple[str, bool]:
