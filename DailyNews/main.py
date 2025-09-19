@@ -1,0 +1,89 @@
+from ncatbot.plugin_system import NcatBotPlugin
+from ncatbot.plugin_system import command_registry
+from ncatbot.core.event import BaseMessageEvent, BaseSender
+from ncatbot.utils import get_log
+from datetime import datetime
+from .utils import fetch_png
+from sirius_core import SiriusPlugin
+from sirius_core.utils import msg_classify
+
+
+class DailyNews(SiriusPlugin):
+    """每日新闻插件"""
+    name = "SiriusBot-Plugin-DailyNews"
+    version = "1.1.0"
+    description = "推送每日新闻，图片来源于默认的API https://uapis.cn/api/v1/daily/news-image"
+
+    async def on_load(self):
+        SiriusPlugin.on_load(self)
+        self.register_config("api_url", "https://uapis.cn/api/v1/daily/news-image", "每日新闻API地址")
+        self.api_url = self.config.get("api_url", "")
+        if not self.api_url:
+            self._log.error("API地址未在config中配置，插件即将卸载。")
+            
+        self.add_scheduled_task(
+            job_func=self._push,
+            name="daily_news",
+            interval="07:30"
+        )
+    
+    @command_registry.command("推送新闻", description="推送每日新闻")
+    async def cmd_news(self, event: BaseMessageEvent):
+        id, target = msg_classify(event)
+        self.add_scheduled_task(
+            job_func=self._single_test,
+            name=f"test_{id}_{target}_{int(datetime.now().timestamp())}",
+            interval="1s",
+            args=(id, target, event.sender),
+            max_runs=1
+        )
+        await event.reply(text="嗨嗨嗨，这么着急想听八卦呀，马上发给你咯~")
+
+    async def _single_test(self, id: str, target: str, sender : BaseSender):
+        self._log.info(f"单次推送任务触发，id={id}, target={target}")
+        await self._push(id=id, target=target, sender=sender)
+
+
+    async def _push(self, id: str = "", target: str = "", sender: BaseSender = None):
+        if target == "group":
+            event_result = await self.publish(
+                "SubscriptionHub.QuerySubscribedGroups",
+                {"plugin": self.name}
+            )
+        elif target == "private":
+            event_result = await self.publish(
+                "SubscriptionHub.QuerySubscribedPrivate",
+                {"plugin": self.name}
+            )
+        result = event_result[0] if isinstance(event_result, (list, tuple)) else event_result
+        subscribed = result.get("subscribed", [])
+        try:
+            pic = fetch_png(self.api_url, self.workspace)
+        except Exception as e:
+            self._log.error(e)
+            return
+
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        week_day = ("星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日")[now.weekday()]
+        time_str = now.strftime("%H:%M")
+        if target == "group": 
+            text = f"Ciallo～(∠・ω< )⌒★,朋友们好呀！现在是 {date_str} {week_day} {time_str}。来看看最近发生了些啥新鲜事~"
+            if id:
+                subscribed = [id]
+            for gid in subscribed:
+                try:
+                    await self.api.post_group_msg(group_id=gid, text=text)
+                    await self.api.post_group_msg(group_id=gid, image=pic)
+                except Exception as e:
+                    self._log.error(f"群{gid}推送失败：{e}")
+        elif target == "private":
+            if sender:
+                text = f"Ciallo～(∠・ω< )⌒★，你好呀{sender.nickname}~ 现在是 {date_str} {week_day} {time_str}。来看看最近发生了些啥新鲜事~"
+                await self.api.post_private_msg(user_id=id, text=text)
+                await self.api.post_private_msg(user_id=id, image=pic)
+        else:
+            self._log.error("消息类型错误")
+
+
+
