@@ -18,7 +18,7 @@ class SiriusCore(SiriusPlugin):
     dependencies = {}
 
     async def on_load(self):
-        super().preinit()
+        super().pre_initialize_plugin()
         # -------- 注册config --------
         self.register_config("data_save_type", "sqlserver", "数据保存方式，支持 sqlserver/textfile")
         self.register_config("sql_settings",

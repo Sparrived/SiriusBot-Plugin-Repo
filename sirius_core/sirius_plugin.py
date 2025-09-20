@@ -1,11 +1,11 @@
-from typing import override
+import time
 from ncatbot.utils import get_log
 from ncatbot.plugin_system import NcatBotPlugin
 from .i18n_mixin import I18nMixin
 from .api import SiriusCoreAPI
 
 class SiriusPlugin(NcatBotPlugin, I18nMixin):
-    """所有 SiriusBot 插件的基类，提供基础的国际化支持。**编写插件时请务必在on_load()或_init_()时使用 super().preinit() 以确保正确初始化。**"""
+    """所有 SiriusBot 插件的基类，提供基础的国际化支持。**编写插件时请务必在on_load()或_init_()时使用 super().pre_initialize_plugin() 以确保正确初始化。**"""
     author = "Sparrived"
     dependencies = {"SiriusCore" : ">=1.0.0"}
     def __init__(self, *args, **kwargs) :
@@ -16,12 +16,12 @@ class SiriusPlugin(NcatBotPlugin, I18nMixin):
         """"添加作者信息(希望我有朝一日能调用到这个方法)"""
         self.author += f", {author_name}"
 
-    def preinit(self) -> None:
-        """插件加载时的初始化操作，任何子类在on_load或_init_时应调用 super().preinit() 以确保一些默认的初始化逻辑得以执行。"""
+    def pre_initialize_plugin(self) -> None:
+        """插件加载时的初始化操作，任何子类在on_load或_init_时应调用 super().pre_initialize_plugin() 以确保一些默认的初始化逻辑得以执行。"""
         if self.name != "SiriusCore":
             while not SiriusCoreAPI.complete:
                 # 等待SiriusCoreAPI初始化完成
-                continue
+                time.sleep(0.5)
         
         # ---- 初始化I18n ----
         self._log.debug(f"初始化 {self.name} 的i18n模块。")

@@ -10,7 +10,7 @@ class SiriusUserManager(SiriusPlugin):
     description = "SiriusBot用于用户管理的插件"
 
     async def on_load(self):
-        if not super().preinit():
+        if not super().pre_initialize_plugin():
             pass
         self.curd = UserCURD(SiriusCoreAPI.database)
         if not self.curd:
