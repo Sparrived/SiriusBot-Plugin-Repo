@@ -1,3 +1,4 @@
+from typing import LiteralString, Optional
 import pyodbc
 class SqlCURD:
     def __init__(self, conn_str : str):
@@ -43,22 +44,21 @@ class SqlCURD:
                 "DELETE FROM subscriptions WHERE plugin_name=? AND id=? AND target=?",
                 plugin, id, target
             )
-
-    def list_by_plugin_groups(self, plugin: str):
-        with self._get_conn() as conn:
-            rows = conn.execute(
-                "SELECT id FROM subscriptions WHERE plugin_name=? AND target='group' ORDER BY create_time",
-                plugin
-            ).fetchall()
-        return [r[0] for r in rows]
     
-    def list_by_plugin_private(self, plugin: str):
+    def list_by_plugin(self, plugin: str, target: Optional[LiteralString] = None):
         with self._get_conn() as conn:
-            rows = conn.execute(
-                "SELECT id FROM subscriptions WHERE plugin_name=? AND target='private' ORDER BY create_time",
-                plugin
-            ).fetchall()
-        return [r[0] for r in rows]
+            if target in ("group", "private"):
+                rows = conn.execute(
+                    "SELECT id, target FROM subscriptions WHERE plugin_name=? AND target=? ORDER BY create_time",
+                    plugin, target
+                ).fetchall()
+                return [r[0] for r in rows]
+            else:
+                rows = conn.execute(
+                    "SELECT id, target FROM subscriptions WHERE plugin_name=? ORDER BY create_time",
+                    plugin
+                ).fetchall()
+                return [(r[0], r[1]) for r in rows]
 
     def list_by_target_id(self, id: str, target : str):
         with self._get_conn() as conn:
