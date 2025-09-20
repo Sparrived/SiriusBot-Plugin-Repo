@@ -1,6 +1,9 @@
+from typing import LiteralString, Optional
 from ncatbot.plugin_system import command_registry
 from ncatbot.core.event import BaseMessageEvent, BaseSender
 from datetime import datetime
+
+from sirius_core.api import SiriusCoreAPI
 from .utils import fetch_png
 from sirius_core import SiriusPlugin
 from sirius_core.utils import msg_classify
@@ -56,19 +59,9 @@ class DailyNews(SiriusPlugin):
         await self._push(id=id, target=target, sender=sender)
 
 
-    async def _push(self, id: str = "", target: str = "", sender: BaseSender = None):
-        if target == "group":
-            event_result = await self.publish(
-                "SubscriptionHub.QuerySubscribedGroups",
-                {"plugin": self.name}
-            )
-        elif target == "private":
-            event_result = await self.publish(
-                "SubscriptionHub.QuerySubscribedPrivate",
-                {"plugin": self.name}
-            )
-        result = event_result[0] if isinstance(event_result, (list, tuple)) else event_result
-        subscribed = result.get("subscribed", [])
+    async def _push(self, id: str = "", target: Optional[LiteralString] = None, sender: BaseSender = None):
+        event_result = await SiriusCoreAPI.get_subscribed(self, target=target)
+        subscribed = event_result.get("subscribed", [])
         try:
             pic = fetch_png(self._api_url, self.workspace)
         except Exception as e:

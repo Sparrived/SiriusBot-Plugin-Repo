@@ -33,10 +33,10 @@ class IPChecker(SiriusPlugin):
             self._log.info(f"IP 变更检测任务已启动，每 {self._check_interval} 秒检测一次。")
 
     @admin_only
-    @command_registry.command("主机IP查询", description="获取机器人所在主机的公网 IP")
+    @command_registry.command("主机地址查询", description="获取机器人所在主机的公网 IP")
     async def cmd_ipcheck(self, msg : BaseMessageEvent):
         try:
-            ip = fetch_ip_async()
+            ip = await fetch_ip_async()
             await self.message_sender.reply_by_message_event(msg, "command.ipcheck_success", args=ip) # 🌐 让我看看喵！现在的公网IP是 {ip} 喵！
         except Exception as e:
             await self.message_sender.reply_by_message_event(msg, "command.ipcheck_failure", args=str(e)) # ❌ 查询失败了喵.\n{e}

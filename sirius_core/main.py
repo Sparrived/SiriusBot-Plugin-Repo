@@ -1,4 +1,4 @@
-from typing import LiteralString, Optional
+from typing import Optional
 from ncatbot.plugin_system import NcatBotEvent
 from ncatbot.plugin_system import admin_only
 from ncatbot.plugin_system import command_registry
@@ -39,6 +39,7 @@ class SiriusCore(SiriusPlugin):
             self._log.error(f"配置错误：{result_msg}，插件不再继续初始化。")
             return
 
+        # TODO : 根据不同的存储方式，初始化不同的 CURD 处理类，目前仅支持 sqlserver
         try:
             self.curd = SqlCURD(result_msg)
         except:
@@ -49,6 +50,7 @@ class SiriusCore(SiriusPlugin):
         else:
             self._log.warning("数据库未正确连接。")
 
+        # -------- 注册事件监听 --------
         self.register_handler("SubscriptionHub.QuerySubscribed", self._on_query_subscribed)
         self._log.info("开始监听 SubscriptionHub.QuerySubscribed.")
 
@@ -58,7 +60,6 @@ class SiriusCore(SiriusPlugin):
             _update_api("complete", True) # 确保api数据提交完毕
         except Exception as e:
             self._log.error(f"向api提交数据失败。{e}",)
-
 
 
     def _check_config(self, data_save_type : Optional[str]) -> tuple[str, bool]:
@@ -94,7 +95,7 @@ class SiriusCore(SiriusPlugin):
     @command_registry.command("订阅", description="订阅插件")
     async def cmd_sub(self, msg: BaseMessageEvent, plugin_name : str):
         """在群/私聊中订阅插件功能"""
-        if not plugin_name in self.get_plugin():
+        if not self.get_plugin(plugin_name):
             await self.message_sender.reply_by_message_event(msg, "command.plugin_not_found", [plugin_name])
         id, target = msg_classify(msg)
         self.curd.add_sub(plugin_name, id, target)
@@ -119,9 +120,9 @@ class SiriusCore(SiriusPlugin):
             await self.message_sender.reply_by_message_event(msg, "command.list_subscribed_plugins", "\n".join(plugins))
 
     #------- 订阅处理函数 --------
-    def _on_query_subscribed(self, event : NcatBotEvent, target : Optional[LiteralString] = None):
+    def _on_query_subscribed(self, event : NcatBotEvent):
         plugin = event.data["plugin"]
-        id = event.data["id"]
-        subscribed = self.curd.list_by_plugin(plugin, id, target)
+        target = event.data.get("target", None)
+        subscribed = self.curd.list_by_plugin(plugin, target)
         args = event.data.get("args", None)
         event.add_result({"plugin": plugin, "subscribed": subscribed, "args": args})
