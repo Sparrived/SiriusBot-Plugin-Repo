@@ -1,0 +1,2 @@
+# SiriusBot-Plugin-ChatCore
+
