@@ -13,8 +13,7 @@ class DailyNews(SiriusPlugin):
     description = "推送每日新闻，图片来源于默认的API https://uapis.cn/api/v1/daily/news-image"
 
     async def on_load(self):
-        super().loading()
-        # -------- 注册config --------
+        super().preinit()
         self.register_config("api_url", "https://uapis.cn/api/v1/daily/news-image", "每日新闻API地址")
         self.register_config("push_time", ["07:30"], "每日推送时间，格式为 HH:MM，支持多个时间点", list)
 

@@ -10,7 +10,8 @@ class SiriusUserManager(SiriusPlugin):
     description = "SiriusBot用于用户管理的插件"
 
     async def on_load(self):
-        super().loading()
+        if not super().preinit():
+            pass
         self.curd = UserCURD(SiriusCoreAPI.database)
         if not self.curd:
             self._log.error("数据库链接失败。")

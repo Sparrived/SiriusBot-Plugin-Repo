@@ -17,8 +17,8 @@ class SiriusCore(SiriusPlugin):
     description = "SiriusBot 及其各项插件的核心桥接插件."
     dependencies = {}
 
-    def on_load(self):
-        super().loading()
+    async def on_load(self):
+        super().preinit()
         # -------- 注册config --------
         self.register_config("data_save_type", "sqlserver", "数据保存方式，支持 sqlserver/textfile")
         self.register_config("sql_settings",
