@@ -27,3 +27,11 @@ class SiriusPlugin(NcatBotPlugin, I18nMixin):
         self._log.debug(f"初始化 {self.name} 的i18n模块。")
         self.register_config("i18n", "zh-CN", "文本输出映射。")
         I18nMixin.__init__(self, self.workspace / "i18n", self.config["i18n"])
+
+    async def on_reload(self) ->None:
+        """插件重载时的操作"""
+        self._log.info(f"插件 {self.name} 重载中...")
+        # 重新加载i18n
+        self.lang = self.config.get("i18n", "zh-CN")
+        self._translations = self._load_translations()
+        self._log.info(f"插件 {self.name} 重载完成。")
