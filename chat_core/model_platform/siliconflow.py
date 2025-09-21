@@ -14,8 +14,6 @@ class SiliconFlow(ModelPlatform):
 
     def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
         extra_body = {"thinking": payload.pop("enable_thinking", False), "thinking_budget": payload.pop("thinking_budget", 512)}
-        payload.pop("enable_thinking", None)
-        payload.pop("thinking_budget", None)
         completion : ChatCompletion = self._client.chat.completions.create(**payload, extra_body=extra_body)
 
         # 处理 API 返回的所有工具调用请求

@@ -64,14 +64,14 @@ class ChatCore(SiriusPlugin):
             if msg.is_group_msg():
                 if not validity['can_output']:
                     self._log.info(f"过滤模型拒绝输出: {item}")
-                    await self.api.post_private_msg(msg.user_id, f"这条消息已被过滤——{validity.get('reason', '')}")
-                    continue
-                await self.api.post_group_msg(msg.group_id, item)
+                    await self.api.post_group_msg(msg.group_id, f"!!过滤({validity.get('reason', '')})")
+                else:
+                    await self.api.post_group_msg(msg.group_id, item)
             else:
                 if not validity['can_output']:
                     self._log.info(f"过滤模型拒绝输出: {item}")
-                    await self.api.post_private_msg(msg.user_id, f"这条消息已被过滤——{validity.get('reason', '')}")
-                    continue
-                await self.api.post_private_msg(msg.user_id, item)
-            time.sleep(len(item) / 4)  # 模拟打字延迟
+                    await self.api.post_private_msg(msg.user_id, f"!!过滤({validity.get('reason', '')})")
+                else:
+                    await self.api.post_private_msg(msg.user_id, item)
+            time.sleep(len(item) / 3)  # 模拟打字延迟
             
