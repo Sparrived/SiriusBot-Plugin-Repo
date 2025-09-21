@@ -1,8 +1,8 @@
 from types import FunctionType
 from ..utils import *
-from ..model_platform import ModelPlatform
+from .model_platform import ModelPlatform
 
-class ModelBase:
+class BaseModel:
     def __init__(self, system_prompt: str, 
                  temperature: float,
                  top_p: float, 

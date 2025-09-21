@@ -1,9 +1,10 @@
 import json
 import time
-from .model_platform import *
-from .models import *
+
+from .sirius_chat_core.models import *
+from .sirius_chat_core.models.model_platform import *
 from sirius_core import SiriusPlugin
-from ncatbot.plugin_system import command_registry
+from ncatbot.plugin_system import command_registry, on_message
 from ncatbot.core.event import BaseMessageEvent
 
 class ChatCore(SiriusPlugin):
@@ -52,6 +53,11 @@ class ChatCore(SiriusPlugin):
         if not self._chat_model:
             self._log.error("未找到合适的聊天模型，插件将不再继续加载。！！注意，这意味着插件无法正常工作！！")
             return
+        
+        self._translate_model = TranslateModel("Qwen/Qwen3-32B", self._platform)
+        if not self._translate_model:
+            self._log.error("未找到合适的翻译模型，插件将不再继续加载。！！注意，这意味着插件无法正常工作！！")
+            return
     
         # ------- 注册指令 --------
     @command_registry.command("chat", description="和机器人对话，机器人一定会回复")
@@ -74,4 +80,29 @@ class ChatCore(SiriusPlugin):
                 else:
                     await self.api.post_private_msg(msg.user_id, item)
             time.sleep(len(item) / 3)  # 模拟打字延迟
+    
+    @on_message
+    async def on_message(self, msg: BaseMessageEvent):
+        if msg.raw_message.startswith("[CQ"):
+            return
+        if msg.raw_message.startswith("/chat"):
+            return
+        if len(msg.raw_message) < 3:
+            return
+        response = self._translate_model.response(self._translate_model.create_initial_message_chain(msg.raw_message))
+        reply = json.loads(response["choices"][0]["message"]["content"])
+        if not reply.get("need_translate", False):
+            return  # 不需要翻译，直接返回
+        translated = reply.get("translated", {})
+        if not translated:
+            self._log.warning("翻译模型返回need_translate为True，但translated为空")
+            return
+        source_content = translated.get("source_content", "")
+        target_content = translated.get("target_content", "")
+        self._log.info(f"翻译模型将内容翻译为中文，原文: {source_content}，译文: {target_content}")
+        if msg.is_group_msg():
+            await self.api.post_group_msg(msg.group_id, f"检测到非中文语言，已翻译：\n原文: {source_content}，\n译文: {target_content}")
+        else:
+            await self.api.post_private_msg(msg.user_id, f"检测到非中文语言，已翻译：\n原文: {source_content}，\n译文: {target_content}")
             
+        

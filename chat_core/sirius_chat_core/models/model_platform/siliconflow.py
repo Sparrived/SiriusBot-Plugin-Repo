@@ -34,4 +34,3 @@ class SiliconFlow(ModelPlatform):
 
         completion = self._client.chat.completions.create(**payload)
         return json.loads(completion.model_dump_json())
-

@@ -2,13 +2,13 @@ from types import FunctionType
 from typing import TYPE_CHECKING, Optional, override
 
 if TYPE_CHECKING:
-    from models import ModelBase
+    from models import BaseModel
 
 class ModelPlatform:
     def __init__(self, api_url: str, authorization: str):
         self._api_url = api_url
         self._authorization = authorization
-    def _build_llm_payload(self, model: "ModelBase", messages: list[dict]) -> dict:
+    def _build_llm_payload(self, model: "BaseModel", messages: list[dict]) -> dict:
         return {
             "model": model._model_name,
             "messages": messages,
@@ -29,7 +29,7 @@ class ModelPlatform:
             "Content-Type": "application/json"
         }
 
-    def response(self, model: "ModelBase", messages: list[dict]) -> dict:
+    def response(self, model: "BaseModel", messages: list[dict]) -> dict:
         payload = self._build_llm_payload(model, messages)
         headers = self._build_headers()
 

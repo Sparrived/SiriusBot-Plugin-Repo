@@ -1,8 +1,8 @@
 import json
-from ..model_platform import ModelPlatform
-from .model_base import ModelBase
+from .model_platform import ModelPlatform
+from .model_base import BaseModel
 
-class FilterModel(ModelBase):
+class FilterModel(BaseModel):
     def __init__(self, model_name: str, platform: ModelPlatform):
         system_prompt = "你是一个优秀的内容审查模型，以下是你的审查任务，最终输出**格式为{\"verified\":[{\"target_content\":\"...\",\"can_output\":..., \"reason\":...},...]}的JSON字符串**。" \
         "\n任务：审查输入内容是否符合中国国情，并输出JSON。**任何不文明用语都是合规的**。" \

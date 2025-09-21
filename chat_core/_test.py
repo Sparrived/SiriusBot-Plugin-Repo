@@ -1,5 +1,5 @@
-from models import FilterModel
-from model_platform import SiliconFlow
+from sirius_chat_core.models import FilterModel
+from sirius_chat_core.models.model_platform import SiliconFlow
 
 if __name__ == "__main__":
     platform = SiliconFlow("")

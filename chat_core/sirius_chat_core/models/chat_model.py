@@ -1,9 +1,9 @@
 from typing import Optional
-from ..model_platform import ModelPlatform
-from .model_base import ModelBase
+from .model_platform import ModelPlatform
+from .model_base import BaseModel
 from ..ego import EgoMixin, PersonalInformation
 
-class ChatModel(ModelBase, EgoMixin):
+class ChatModel(BaseModel, EgoMixin):
     def __init__(self, model_name: str, platform: ModelPlatform, personal_information: Optional[PersonalInformation] = None):
         EgoMixin.__init__(self, personal_information)
 
@@ -14,4 +14,4 @@ class ChatModel(ModelBase, EgoMixin):
         frequency_penalty = 0.3
         presence_penalty= 0.3
 
-        ModelBase.__init__(self,system_prompt, temperature, top_p, 0, max_tokens, model_name, frequency_penalty, presence_penalty, platform)
+        BaseModel.__init__(self,system_prompt, temperature, top_p, 0, max_tokens, model_name, frequency_penalty, presence_penalty, platform)
