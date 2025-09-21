@@ -1,17 +1,22 @@
 from types import FunctionType
+from typing import TypeVar, override
+from typing_extensions import deprecated
 from ..utils import *
 from .model_platform import ModelPlatform
 
+T = TypeVar("Model", bound="BaseModel")
+
 class BaseModel:
-    def __init__(self, system_prompt: str, 
-                 temperature: float,
-                 top_p: float, 
-                 top_k: int, 
-                 max_tokens: int, 
+    def __init__(self, 
+                 system_prompt: str, 
                  model_name: str,
-                 frequency_penalty: float,
-                 presence_penalty: float,
                  platform : ModelPlatform,
+                 temperature: float = 0.7,
+                 top_p: float = 1.0,
+                 top_k: int = 50,
+                 max_tokens: int = 1024,
+                 frequency_penalty: float = 0.0,
+                 presence_penalty: float = 0.0,
                  enable_streaming: bool = False,
                  enable_thinking: bool = False,
                  thinking_budget: int = 512,
@@ -48,5 +53,18 @@ class BaseModel:
         except Exception as e:
             raise ValueError(f"构建工具失败: {e}")
     
-    def response(self, messages: MessageChain) -> dict:
+    def _response(self, messages: MessageChain) -> dict:
+        """发送请求并返回响应结果，得到全部响应结果的内容"""
         return self._platform.response(self, messages.messages)
+    
+    def _process_data(self, model_output: dict) -> dict:
+        """处理响应结果，提取有用信息"""
+        pass
+
+    def get_process_data(self, messages: MessageChain) -> dict:
+        """获取处理后的数据"""
+        try:
+            model_output = self._response(messages)
+            return self._process_data(model_output)
+        except Exception as e:
+            raise ValueError(f"获取处理后的数据失败: {e}")

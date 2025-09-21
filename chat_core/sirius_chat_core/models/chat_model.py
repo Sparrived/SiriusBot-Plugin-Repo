@@ -1,6 +1,7 @@
-from typing import Optional
+import json
+from typing import Optional, override
 from .model_platform import ModelPlatform
-from .model_base import BaseModel
+from .base_model import BaseModel
 from ..ego import EgoMixin, PersonalInformation
 
 class ChatModel(BaseModel, EgoMixin):
@@ -8,10 +9,15 @@ class ChatModel(BaseModel, EgoMixin):
         EgoMixin.__init__(self, personal_information)
 
         system_prompt = self.get_total_prompt()
-        temperature = 0.7
-        top_p = 0.9
-        max_tokens = 512
-        frequency_penalty = 0.3
-        presence_penalty= 0.3
 
-        BaseModel.__init__(self,system_prompt, temperature, top_p, 0, max_tokens, model_name, frequency_penalty, presence_penalty, platform)
+        BaseModel.__init__(self, system_prompt, model_name, platform, temperature=0.7, top_p= 0.9, max_tokens=2048)
+
+    @override
+    def _process_data(self, model_output: dict) -> dict:
+        try:
+            content = json.loads(model_output["choices"][0]["message"]["content"])
+            if isinstance(content, dict):
+                return content
+            raise ValueError("无效的响应格式")
+        except Exception as e:
+            raise ValueError(f"处理数据失败: {e}")

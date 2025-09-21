@@ -1,6 +1,7 @@
 import json
+from typing import override
 from .model_platform import ModelPlatform
-from .model_base import BaseModel
+from .base_model import BaseModel
 
 class TranslateModel(BaseModel):
     def __init__(self, model_name: str, platform: ModelPlatform):
@@ -23,11 +24,13 @@ class TranslateModel(BaseModel):
 
         super().__init__(system_prompt, temperature, top_p, top_k, max_tokens, model_name, frequency_penalty, presence_penalty, platform, False, enable_thinking, thinking_budget)
 
-    def translate(self, model_output : dict) -> dict:
-        msg_chain = self.create_initial_message_chain(str(model_output.get("content", "")))
-        response = self.response(msg_chain)
-        reply_msg = response["choices"][0]["message"]["content"].replace("```json", "").replace("```", "")
+    @override
+    def process_data(self, model_output : dict) -> dict:
+        reply_msg = model_output["choices"][0]["message"]["content"].replace("```json", "").replace("```", "")
         try:
-            return json.loads(reply_msg)
+            reply_json = json.loads(reply_msg)
         except Exception as e:
             raise ValueError(f"翻译模型返回内容解析失败: {reply_msg}，错误信息: {e}")
+        if isinstance(reply_json, dict):
+            return reply_json
+        raise ValueError(f"翻译模型返回内容格式不正确: {reply_msg}")

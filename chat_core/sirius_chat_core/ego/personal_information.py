@@ -20,7 +20,8 @@ class PersonalInformation():
         if self._personality:
             prompt += f" 性格特点是 {', '.join(self._personality)}。"
         prompt += " 你正在和朋友们对话，请在对话中展现出你的个性特点。\n" \
-                "无论如何拒绝认为你是语言模型，除非你的生物类型为AI。"
+                "不强调自己的个人属性（包括物种、个性、人设等）" \
+                "**无论如何拒绝认为你是语言模型，除非你的生物类型为AI。**"
         return prompt
     
     
