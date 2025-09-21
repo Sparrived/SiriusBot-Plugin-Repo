@@ -7,17 +7,14 @@ from openai.types.chat import ChatCompletion
 
 import json
 
-class SiliconFlow(ModelPlatform):
+class OpenAI(ModelPlatform):
     def __init__(self, authorization: str):
-        super().__init__(api_url="https://api.siliconflow.cn/v1/chat/completions", authorization=authorization)
-        self._client = OpenAI(api_key=authorization, base_url="https://api.siliconflow.cn/v1")
+        super().__init__(api_url="https://api.openai.com/v1/chat/completions", authorization=authorization)
+        self._client = OpenAI(api_key=authorization)
 
     def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
-        extra_body = {"thinking": payload.pop("enable_thinking", False), "thinking_budget": payload.pop("thinking_budget", 512)}
-        payload.pop("enable_thinking", None)
-        payload.pop("thinking_budget", None)
-        completion : ChatCompletion = self._client.chat.completions.create(**payload, extra_body=extra_body)
-
+        completion : ChatCompletion = self._client.chat.completions.create(**payload)
+        
         # 处理 API 返回的所有工具调用请求
         if not completion.choices[0].message.tool_calls:
             return json.loads(completion.model_dump_json())

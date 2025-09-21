@@ -1,6 +1,6 @@
 from types import FunctionType
-from utils import *
-from model_platform import ModelPlatform
+from ..utils import *
+from ..model_platform import ModelPlatform
 
 class ModelBase:
     def __init__(self, system_prompt: str, 
@@ -10,9 +10,11 @@ class ModelBase:
                  max_tokens: int, 
                  model_name: str,
                  frequency_penalty: float,
+                 presence_penalty: float,
                  platform : ModelPlatform,
                  enable_streaming: bool = False,
                  enable_thinking: bool = False,
+                 thinking_budget: int = 512,
                  stop: list[str] = [],
                  n: int = 1,
                  response_format: str = "json_object"
@@ -24,8 +26,10 @@ class ModelBase:
         self._max_tokens = max_tokens
         self._model_name = model_name
         self._frequency_penalty = frequency_penalty
+        self._presence_penalty = presence_penalty
         self._enable_streaming = enable_streaming
         self._enable_thinking = enable_thinking
+        self._thinking_budget = thinking_budget
         self._stop = stop
         self._tools : list[dict[str, str|dict]] = []
         self._n = n

@@ -2,7 +2,7 @@ from models import FilterModel
 from model_platform import SiliconFlow
 
 if __name__ == "__main__":
-    platform = SiliconFlow("your_api_key_here")
+    platform = SiliconFlow("")
 
     # -------- 测试 FilterModel --------
     filter_model = FilterModel("Qwen/Qwen3-8B", platform=platform)

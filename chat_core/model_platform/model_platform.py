@@ -18,8 +18,9 @@ class ModelPlatform:
             "top_p": model._top_p,
             "frequency_penalty": model._frequency_penalty,
             "n": model._n,
+            "enable_thinking": model._enable_thinking,
+            "thinking_budget": model._thinking_budget,
             "response_format": {"type": model._response_format},
-
         }
     
     def _build_headers(self) -> dict:
@@ -36,5 +37,5 @@ class ModelPlatform:
 
     @override
     def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
-        # 这里是发送请求的逻辑
+        # 不同平台应该覆写自己的发送请求的逻辑。
         pass

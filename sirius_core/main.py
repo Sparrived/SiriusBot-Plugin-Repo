@@ -97,6 +97,7 @@ class SiriusCore(SiriusPlugin):
         """在群/私聊中订阅插件功能"""
         if not self.get_plugin(plugin_name):
             await self.message_sender.reply_by_message_event(msg, "command.plugin_not_found", [plugin_name])
+            return
         id, target = msg_classify(msg)
         self.curd.add_sub(plugin_name, id, target)
         await self.message_sender.reply_by_message_event(msg, "command.subscribe_done", [plugin_name])
