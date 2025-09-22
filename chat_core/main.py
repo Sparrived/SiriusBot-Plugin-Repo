@@ -1,13 +1,18 @@
 import asyncio
-import json
 import time
 
 from .sirius_chat_core.models import *
 from .sirius_chat_core.models.model_platform import *
+from .sirius_chat_core.willingness_system import *
 from sirius_core import SiriusPlugin
 from ncatbot.plugin_system import command_registry, on_message
 from ncatbot.core.event import BaseMessageEvent
+from .utils import send_message, get_message_type
+from .sirius_chat_core.ego import talk_manager
 
+from typing import TypeVar
+
+T = TypeVar("T", bound=BaseModel)
 
 class ChatCore(SiriusPlugin):
     """Siriusbot 用于聊天的核心插件"""
@@ -39,7 +44,7 @@ class ChatCore(SiriusPlugin):
         model_selection = self.config["model_selection"]
 
         # -------- 构建模型 --------
-        def get_model_instance(model_dict: dict, model_class: BaseModel) -> BaseModel:
+        def get_model_instance(model_dict: dict, model_class: type[T]) -> T:
             try:
                 platform, name = next(iter(model_dict.items()))
                 platform = PLATFORMNAMEMAP[platform](self.config["platforms"][platform])
@@ -53,43 +58,68 @@ class ChatCore(SiriusPlugin):
         except ValueError as e:
             self._log.error(f"模型加载失败: {e}")
             return
+        
+        # -------- 注册processor --------
+        # TODO: processor的开关
+        w_calculator.register_processor(MentionProcessor())
+
+    async def chat(self, msg: BaseMessageEvent, message_context: MessageContext):
+        """把chat丢到对话管理器里"""
+        if msg.is_group_msg():
+            target = "G"+msg.group_id
+        else:
+            target = "P"+msg.user_id
+        talk_manager.create_talk(self._log, target, message_context, send_message, self._chat_model, self._filter_model if self.config["filter_mode"] else None)
 
     # ------- 注册指令 --------
     @command_registry.command("chat", description="和机器人对话，机器人一定会回复")
     async def cmd_chat(self, msg: BaseMessageEvent, current_text: str):
         """与机器人对话的指令"""
-        processed_data = self._chat_model.get_process_data(self._chat_model.create_initial_message_chain(current_text))
-        if self.config.get("filter_mode", True):
-            validation_data = self._filter_model.get_process_data(self._filter_model.create_initial_message_chain(str(processed_data)))
-            for verification_result, original_content in zip(validation_data["verified"], processed_data["content"]):
-                can_output = verification_result.get("can_output", False)
-                reason = verification_result.get("reason", "")
-                if msg.is_group_msg():
-                    if not can_output:
-                        self._log.info(f"过滤模型认为 {original_content} 不应输出，因为 {reason}")
-                        await self.api.post_group_msg(msg.group_id, f"!!过滤!!({reason})")
-                    else:
-                        await self.api.post_group_msg(msg.group_id, original_content)
-                else:
-                    if not can_output:
-                        self._log.info(f"过滤模型认为 {original_content} 不应输出，因为 {reason}")
-                        await self.api.post_private_msg(msg.user_id, f"!!过滤!!({reason})")
-                    else:
-                        await self.api.post_private_msg(msg.user_id, original_content)
-                await asyncio.sleep(len(original_content) / 3)  # 模拟打字延迟
-        else:
-            for reply_msg in processed_data.get("content", []):
-                if msg.is_group_msg():
-                    await self.api.post_group_msg(msg.group_id, reply_msg)
-                else:
-                    await self.api.post_private_msg(msg.user_id, reply_msg)
-                await asyncio.sleep(len(reply_msg) / 3)  # 模拟打字延迟
-
+        mc = MessageContext(
+            user_id=msg.user_id, 
+            source_id=msg.group_id if msg.is_group_msg() else None,
+            message=current_text,
+            message_type=MessageType.TEXT,
+            timestamp=int(time.time()),
+            mentioned_bot=False
+            )
+        await self.chat(msg, mc)
+    
     @on_message
     async def on_message(self, msg: BaseMessageEvent):
         if not self.config.get("water_group", True):
             return
+        mentioned_bot = False
+        message_type = MessageType.TEXT
+        message = ""
+        # 构建意愿值计算参数
+        for segment in msg.message.messages:
+            if get_message_type(segment) == "at":
+                if segment.qq != msg.self_id:
+                    continue
+                message_type = MessageType.AT
+            if get_message_type(segment) == "text":
+                message: str = segment.text
+                mentioned_bot = self._chat_model.is_mentioned(message)
+                
+        mc = MessageContext(
+            user_id=msg.user_id, 
+            source_id=msg.group_id if msg.is_group_msg() else None,
+            message=message,
+            message_type=message_type,
+            timestamp=int(time.time()),
+            mentioned_bot=mentioned_bot
+            )
         
+        result = await w_calculator.calculate_async(mc)
+        self._log.debug(f"意愿值计算结果: {result}")
+        if result["should_reply"]:
+            await self.chat(msg, mc)
+
+
+
+    async def on_unload(self):
+        talk_manager.dispose()
         # -------- 翻译模型 --------
         # if msg.raw_message.startswith("[CQ"):
         #     return

@@ -1,4 +1,6 @@
 from .ego_mixin import EgoMixin
 from .personal_information import PersonalInformation
+from .sense_organs.mouth import TalkManager, talk_manager
 
-__all__ = ["EgoMixin", "PersonalInformation"]
+__all__ = ["EgoMixin", "PersonalInformation", 
+           "TalkManager", "talk_manager"]

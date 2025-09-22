@@ -6,7 +6,7 @@ from openai import OpenAI
 
 class OpenAI(ModelPlatform):
     def __init__(self, authorization: str):
-        super().__init__(api_url="https://api.openai.com/v1/chat/completions", authorization=authorization)
+        super().__init__(api_url="https://api.openai.com/v1/", authorization=authorization, chat_api="chat/completions")
         self._client = OpenAI(api_key=authorization)
 
     @override
