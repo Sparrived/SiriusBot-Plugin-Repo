@@ -1,10 +1,7 @@
 import json
 from types import FunctionType
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 from openai.types.chat import ChatCompletion
-
-if TYPE_CHECKING:
-    from models import BaseModel
 
 class ModelPlatform:
     def __init__(self, api_url: str, authorization: str, chat_api: str = "chat/completions", img_api: str = "images/generations"):
@@ -12,51 +9,25 @@ class ModelPlatform:
         self._authorization = authorization
         self._chat_model_api = api_url + chat_api
         self._img_model_api = api_url + img_api
-
-    def _build_llm_payload(self, model: "BaseModel", messages: list[dict]) -> dict:
-        self._extra_body = self._build_extra_body(model)
-        return {
-            "model": model._model_name,
-            "messages": messages,
-            "max_tokens": model._max_tokens,
-            "stop": model._stop,
-            "temperature": model._temperature,
-            "top_p": model._top_p,
-            "frequency_penalty": model._frequency_penalty,
-            "presence_penalty": model._presence_penalty,
-            "n": model._n,
-            "response_format": {"type": model._response_format},
-        }
-    
-    def _build_image_payload(self, model: "BaseModel", image: str) -> dict:
-        pass
+        self.custom_extra_body: Optional[Callable] = None
 
     def _build_headers(self) -> dict:
         return {
             "Authorization": f"Bearer {self._authorization}",
             "Content-Type": "application/json"
         }
-    
-    def _build_extra_body(self, model : "BaseModel") -> dict:
-        return {
-            "thinking": model._enable_thinking,
-            "thinking_budget": model._thinking_budget
-        }
 
-    def response(self, model_instance: "BaseModel", messages: list[dict]) -> dict:
-        payload = self._build_llm_payload(model_instance, messages)
+    def response(self, payload: dict, extra_body: Optional[dict] = None) -> dict:
         headers = self._build_headers()
+        return self.send_request(payload, headers, extra_body)
 
-        return self.send_request(payload, headers)
+    def send_request(self, payload: dict, headers: dict, extra_body: Optional[dict] = None, funcs: Optional[list[FunctionType]] = None) -> dict:
+        """发送请求，如需requests实现，重写此函数"""
+        return self.send_request_openai(payload, extra_body, funcs)
 
-    def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
-        """发送请求，子类需要实现该方法"""
-        pass
-
-
-    def send_request_openai(self, payload: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
+    def send_request_openai(self, payload: dict, extra_body: Optional[dict] = None, funcs: Optional[list[FunctionType]] = None) -> dict:
         """使用 OpenAI SDK 发送请求"""
-        completion : ChatCompletion = self._client.chat.completions.create(**payload, extra_body=self._extra_body)
+        completion : ChatCompletion = self._client.chat.completions.create(**payload, extra_body=extra_body)
 
         # 处理 API 返回的所有工具调用请求
         if not completion.choices[0].message.tool_calls:

@@ -1,6 +1,7 @@
 import inspect
 import re
 from types import FunctionType
+from typing import Optional
 from .message_chain import MessageChain
 
 class FunctionBuilder:
@@ -59,13 +60,23 @@ class MessageChainBuilder:
         """构建消息链"""
         self._messages.append({"role": "system", "content": system_prompt})
 
-    def add_user_message(self, content: str):
+    def add_user_message(self, content: str, img_base64: Optional[str] = None):
         """添加用户消息到消息链"""
         if self._messages is None:
             self._messages = []
         if len(self._messages) > 1 and self._messages[-1]["role"] == "user":
             raise ValueError("用户消息不能连续发送")
-        self._messages.append({"role": "user", "content": content})
+        if img_base64:
+            self._messages.append({"role": "user",
+                                    "content": [{"type": "image_url", 
+                                         "image_url":{
+                                             "url": f"data:image/jpeg;base64,{img_base64}",
+                                             "detail":"low"
+                                             }
+                                        }, 
+                                    {"type": "text", "text": content}]})
+        else:
+            self._messages.append({"role": "user", "content": content})
 
     def add_assistant_message(self, content: str):
         """添加助手消息到消息链"""

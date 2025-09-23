@@ -12,7 +12,7 @@ class MentionProcessor(ParameterProcessor):
     @override
     async def process(self, context: MessageContext) -> float:
         try:
-            if context.message_type == MessageType.AT:
+            if context.message_type in [MessageType.AT, MessageType.REPLY]:
                 return 1.0
             if context.mentioned_bot:
                 return self._weight

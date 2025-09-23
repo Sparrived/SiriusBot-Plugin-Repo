@@ -8,7 +8,7 @@ class EgoMixin(LimitMixin):
     def __init__(
             self, 
             personal_information: Optional[PersonalInformation] = None,
-            chat_style: list[str] = ["少量夹杂网络梗", "少量使用emoji表情"], 
+            chat_style: list[str] = ["少量夹杂网络梗"], 
             name: str = "月白", 
             nicknames: list[str] = ["sirius", "胉"], 
             gender: str = "女", 

@@ -1,5 +1,5 @@
 from types import FunctionType
-from typing import TypeVar, override
+from typing import Optional, TypeVar, override
 from typing_extensions import deprecated
 from ..utils import *
 from .model_platform import ModelPlatform
@@ -22,7 +22,7 @@ class BaseModel:
                  thinking_budget: int = 512,
                  stop: list[str] = [],
                  n: int = 1,
-                 response_format: str = "json_object"
+                 response_format: Optional[str] = "json_object"
                  ):
         self._system_prompt = system_prompt
         self._temperature = temperature
@@ -41,10 +41,10 @@ class BaseModel:
         self._response_format = response_format
         self._platform = platform
 
-    def create_initial_message_chain(self, user_message: str):
+    def create_initial_message_chain(self, user_message: str, img_base64: Optional[str] = None) -> MessageChain:
         mcb = MessageChainBuilder()
         mcb.create_new_message_chain(self._system_prompt)
-        mcb.add_user_message(user_message)
+        mcb.add_user_message(user_message, img_base64)
         return mcb.build()
 
     def add_tool(self, func: FunctionType, desc: str = ""):
@@ -55,10 +55,11 @@ class BaseModel:
     
     def _response(self, messages: MessageChain) -> dict:
         """发送请求并返回响应结果，得到全部响应结果的内容"""
-        return self._platform.response(self, messages.messages)
+        payload = self._build_payload(messages)
+        return self._platform.response(payload, self._extra_body)
     
     def _process_data(self, model_output: dict) -> dict:
-        """处理响应结果，提取有用信息"""
+        """处理响应结果，提取有用信息，需要子类实现"""
         pass
 
     def get_process_data(self, messages: MessageChain) -> dict:
@@ -68,3 +69,26 @@ class BaseModel:
             return self._process_data(model_output)
         except Exception as e:
             raise ValueError(f"获取处理后的数据失败: {e}")
+        
+    def _build_payload(self, messages: list[dict]) -> dict:
+        self._extra_body = self._build_extra_body()
+        return {
+            "model": self._model_name,
+            "messages": messages,
+            "max_tokens": self._max_tokens,
+            "stop": self._stop,
+            "temperature": self._temperature,
+            "top_p": self._top_p,
+            "frequency_penalty": self._frequency_penalty,
+            "presence_penalty": self._presence_penalty,
+            "n": self._n,
+            "response_format": {"type": self._response_format},
+        }
+
+    def _build_extra_body(self) -> dict:
+        if self._platform.custom_extra_body:
+            return self._platform.custom_extra_body(self)
+        return {
+            "thinking": self._enable_thinking,
+            "thinking_budget": self._thinking_budget
+        }

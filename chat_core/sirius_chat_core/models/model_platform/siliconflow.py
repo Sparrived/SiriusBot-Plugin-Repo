@@ -9,7 +9,3 @@ class SiliconFlow(ModelPlatform):
     def __init__(self, authorization: str):
         super().__init__(api_url="https://api.siliconflow.cn/v1/", authorization=authorization)
         self._client = OpenAI(api_key=authorization, base_url="https://api.siliconflow.cn/v1")
-
-    @override
-    def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
-        return self.send_request_openai(payload, funcs)

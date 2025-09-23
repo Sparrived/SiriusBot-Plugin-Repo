@@ -1,21 +1,19 @@
 from types import FunctionType
-from typing import Optional, override
+from typing import TYPE_CHECKING, Optional, override
 
 from .model_platform import ModelPlatform
 from openai import OpenAI
 
+if TYPE_CHECKING:
+    from ...models import BaseModel
 class VolcengineArk(ModelPlatform):
     def __init__(self, authorization: str):
         super().__init__(api_url="https://ark.cn-beijing.volces.com/api/v3/", authorization=authorization)
         self._client = OpenAI(api_key=authorization, base_url="https://ark.cn-beijing.volces.com/api/v3")
+        self.custom_extra_body = self._build_extra_body
 
-    @override
-    def _build_extra_body(self, model):
+    def _build_extra_body(self, model : "BaseModel"):
         if model._model_name.startswith("doubao-seed-1-6-250615"):
             return {"thinking": {"type": "auto"}}
         return {"thinking": {"type": "enabled" if model._enable_thinking else "disabled"}}
-
-    @override
-    def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
-        return self.send_request_openai(payload, funcs)
     
