@@ -69,6 +69,9 @@ class ChatCore(SiriusPlugin):
             target = "G"+msg.group_id
         else:
             target = "P"+msg.user_id
+        if message_context.message_type in [MessageType.AT, MessageType.TEXT]:
+            msg = f"<message><user:{msg.sender.nickname}/>{message_context.message}</message>"
+            message_context.message = msg
         talk_manager.create_talk(self._log, target, message_context, send_message, self._chat_model, self._filter_model if self.config["filter_mode"] else None)
 
     # ------- 注册指令 --------

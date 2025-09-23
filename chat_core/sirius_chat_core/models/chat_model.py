@@ -59,7 +59,7 @@ class ChatModel(BaseModel, EgoMixin):
                 can_output = verification_result.get("can_output", False)
                 reason = verification_result.get("reason", "")
                 if not can_output:
-                    yield original_content, f"!!过滤!!({reason})"
+                    yield f"!!过滤!!({reason})", original_content
                 else:
                     yield original_content, ""
                 time.sleep(len(original_content) / 5)  # 模拟打字延迟

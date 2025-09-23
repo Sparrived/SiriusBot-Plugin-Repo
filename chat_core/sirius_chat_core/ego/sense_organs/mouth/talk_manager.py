@@ -4,12 +4,12 @@ import time
 from typing import TYPE_CHECKING, Callable, Optional
 from queue import Queue
 
-from ...models import FilterModel
+from ....models import FilterModel
 
-from ...willingness_system import MessageContext
+from ....willingness_system import MessageContext
 
 if TYPE_CHECKING:
-    from ...models import ChatModel
+    from ....models import ChatModel
 
 class TalkManager:
     """对话管理器，解决模型高并发问题"""

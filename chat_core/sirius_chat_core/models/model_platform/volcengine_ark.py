@@ -11,7 +11,9 @@ class VolcengineArk(ModelPlatform):
 
     @override
     def _build_extra_body(self, model):
-        return {"thinking": {"type" : "enabled" if model._enable_thinking else "disabled"}}
+        if model._model_name.startswith("doubao-seed-1-6-250615"):
+            return {"thinking": {"type": "auto"}}
+        return {"thinking": {"type": "enabled" if model._enable_thinking else "disabled"}}
 
     @override
     def send_request(self, payload: dict, headers: dict, funcs: Optional[list[FunctionType]] = None) -> dict:
