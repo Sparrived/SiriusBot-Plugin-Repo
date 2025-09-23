@@ -19,7 +19,8 @@ class TalkManager:
         self._lock = threading.Lock()
         self._reply_queue = Queue()
 
-
+    # FIXME: 这里的逻辑其实是有问题的，高并发应该减少调用次数，把多个内容合并到一个prompt后再发送，这样比较合理，并且模型可以更好的知道上下文
+    # 暂时不想改了，等记忆系统搓出来再说吧
     def create_talk(self, log, target, message_context: MessageContext, send_func: Callable, chat_model: "ChatModel", filter_model: Optional[FilterModel] = None):
         try:
             if self._mouth:

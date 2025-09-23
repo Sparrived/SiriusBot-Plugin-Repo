@@ -10,7 +10,7 @@ class EgoMixin(LimitMixin):
             personal_information: Optional[PersonalInformation] = None,
             chat_style: list[str] = ["少量夹杂网络梗", "少量使用emoji表情"], 
             name: str = "月白", 
-            nicknames: list[str] = ["sirius"], 
+            nicknames: list[str] = ["sirius", "胉"], 
             gender: str = "女", 
             species: str = "人类",
             birthday: Optional[str] = "2003-10-24", 
