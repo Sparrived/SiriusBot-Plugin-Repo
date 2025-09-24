@@ -35,7 +35,7 @@ class MemoticonSystem:
     
     def judge_img(self, img_base64: str) -> Optional[str]:
         """判断图片是否为表情包"""
-        # img_base64 = self._resize_image(img_base64, 0.5)
+        img_base64 = self._resize_image(img_base64)
         img_hash = hashlib.sha256(img_base64.encode()).hexdigest()
         conn = sqlite3.connect(self._db_path)
         c = conn.cursor()
@@ -49,13 +49,16 @@ class MemoticonSystem:
                 return self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
         return None
     
-    def _resize_image(self,img_path: str, scale: float = 0.5) -> str:
+    def _resize_image(self,img_path: str, max_edge: int = 256) -> str:
+        """缩放图片，确保其在QQ内显示大小合理，返回base64编码"""
         # 打开图片
         img = Image.open(BytesIO(base64.b64decode(img_path)))
+        w, h = img.size
+        scale = min(scale, max_edge / max(w, h), 1.0)
         # 计算新尺寸
-        new_size = (int(img.width * scale), int(img.height * scale))
+        new_size = (int(w * scale), int(h * scale))
         # 缩放图片
-        img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+        img_resized = img.resize(new_size, Image.Resampling.NEAREST)
         # 再编码为 base64
         buffer = BytesIO()
         img_resized.save(buffer, format=img.format or "jpg")
