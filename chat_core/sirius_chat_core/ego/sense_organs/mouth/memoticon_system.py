@@ -49,19 +49,33 @@ class MemoticonSystem:
                 return self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
         return None
     
-    def _resize_image(self,img_path: str, max_edge: int = 128) -> str:
-        """缩放图片，确保其在QQ内显示大小合理，返回base64编码"""
-        # 打开图片
-        img = Image.open(BytesIO(base64.b64decode(img_path)))
+    def _resize_image(self, img_path: str, max_edge: int = 128) -> str:
+        """缩放图片，确保其在QQ内显示大小合理，返回base64编码。支持 GIF 和 JPG/PNG。"""
+        img_bytes = base64.b64decode(img_path)
+        img = Image.open(BytesIO(img_bytes))
         w, h = img.size
         scale = min(max_edge / max(w, h), 1.0)
-        # 计算新尺寸
         new_size = (int(w * scale), int(h * scale))
-        # 缩放图片
-        img_resized = img.resize(new_size, Image.Resampling.NEAREST)
-        # 再编码为 base64
+
         buffer = BytesIO()
-        img_resized.save(buffer, format=img.format or "jpg")
+        # 处理 GIF 动图
+        if getattr(img, "is_animated", False):
+            frames = []
+            for frame in range(img.n_frames):
+                img.seek(frame)
+                frame_img = img.copy().resize(new_size, Image.Resampling.NEAREST)
+                frames.append(frame_img)
+            frames[0].save(
+                buffer,
+                format="GIF",
+                save_all=True,
+                append_images=frames[1:],
+                loop=img.info.get("loop", 0),
+                duration=img.info.get("duration", 100)
+            )
+        else:
+            img_resized = img.resize(new_size, Image.Resampling.NEAREST)
+            img_resized.save(buffer, format=img.format or "JPEG")
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
     
 
