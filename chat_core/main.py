@@ -75,15 +75,16 @@ class ChatCore(SiriusPlugin):
         w_calculator.register_processor(MentionProcessor())
 
     async def chat(self, msg: BaseMessageEvent, message_context: MessageContext):
-        """把chat丢到对话系统"""
+        """构建消息链，把chat丢到对话系统"""
+        mc = self._chat_model.create_initial_message_chain(message_context.message)
         if msg.is_group_msg():
             target = "G"+msg.group_id
         else:
             target = "P"+msg.user_id
         if message_context.message_type in [MessageType.AT, MessageType.TEXT, MessageType.REPLY]:
-            msg = f"<message><user:{msg.sender.nickname}/>{message_context.message}</message>"
+            msg = f"<message><user:{msg.sender.nickname}/><user_qqid:{msg.sender.user_id}/>{message_context.message}</message>"
             message_context.message = msg
-        self._talk_system.create_talk(self._log, target, message_context, send_message, self._filter_model if self.config["filter_mode"] else None)
+        self._talk_system.create_talk(self._log, target, mc, message_context, send_message, self._filter_model if self.config["filter_mode"] else None)
 
     # ------- 注册指令 --------
     @command_registry.command("chat", description="和机器人对话，机器人一定会回复")

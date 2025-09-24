@@ -3,6 +3,8 @@ import json
 import time
 from typing import Optional, override
 
+from ..utils.message_chain import MessageChain
+
 from ..willingness_system.message_context import MessageContext
 
 from .filter_model import FilterModel
@@ -41,8 +43,8 @@ class ChatModel(BaseModel, EgoMixin):
                 return True
         return False
 
-    def _process_func(self, message_context: MessageContext, filter: Optional[FilterModel]):
-        processed_data = self.get_process_data(self.create_initial_message_chain(message_context.message))
+    def _process_func(self, message_chain: MessageChain, filter: Optional[FilterModel]):
+        processed_data = self.get_process_data(message_chain.messages)
         if filter:
             validation_data = filter.get_process_data(filter.create_initial_message_chain(str(processed_data)))
         return processed_data, validation_data if filter else None, processed_data["emotion"] if processed_data["emotion"] in ["喜悦", "愤怒", "悲伤", "厌恶", "平静", "尴尬", "失望", "渴望", "疑惑"] else "平静"
