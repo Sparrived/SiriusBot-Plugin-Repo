@@ -54,7 +54,7 @@ class MemoticonSystem:
         # 打开图片
         img = Image.open(BytesIO(base64.b64decode(img_path)))
         w, h = img.size
-        scale = min(scale, max_edge / max(w, h), 1.0)
+        scale = min(max_edge / max(w, h), 1.0)
         # 计算新尺寸
         new_size = (int(w * scale), int(h * scale))
         # 缩放图片
