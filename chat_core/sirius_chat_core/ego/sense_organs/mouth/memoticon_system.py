@@ -49,7 +49,7 @@ class MemoticonSystem:
                 return self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
         return None
     
-    def _resize_image(self,img_path: str, max_edge: int = 256) -> str:
+    def _resize_image(self,img_path: str, max_edge: int = 128) -> str:
         """缩放图片，确保其在QQ内显示大小合理，返回base64编码"""
         # 打开图片
         img = Image.open(BytesIO(base64.b64decode(img_path)))
