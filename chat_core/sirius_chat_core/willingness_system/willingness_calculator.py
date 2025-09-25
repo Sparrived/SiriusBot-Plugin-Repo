@@ -66,4 +66,4 @@ class WillingnessCalculator:
         }
 
 # 创建全局意愿值计算器
-willingness_calculator = WillingnessCalculator(0.5)
+willingness_calculator = WillingnessCalculator()

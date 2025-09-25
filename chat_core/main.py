@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import random
 import time
 
 import requests
@@ -112,12 +113,13 @@ class ChatCore(SiriusPlugin):
             img = msg.message.filter_image()[0]
             response = requests.get(img.url)
             response.raise_for_status()
-            try:
-                result = self._memoticon_system.judge_img(base64.b64encode(response.content).decode("utf-8"))
-                if result:
-                    self._log.info(f"已注册表情包: {result}")
-            except Exception as e:
-                self._log.error(f"表情包判别失败: {e}")
+            if random.random() <= 0.3:  # 30% 概率进行表情包注册逻辑
+                try:
+                    result = self._memoticon_system.judge_img(base64.b64encode(response.content).decode("utf-8"))
+                    if result:
+                        self._log.info(f"已注册表情包: {result}")
+                except Exception as e:
+                    self._log.error(f"表情包判别失败: {e}")
             return
 
         # -------- 回复逻辑 --------

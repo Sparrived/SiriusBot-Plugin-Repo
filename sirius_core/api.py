@@ -27,7 +27,7 @@ class SiriusCoreAPI:
         if not cls.complete:
             raise RuntimeError("SiriusCoreAPI 未初始化完成，无法调用此方法。")
         event_result = await instance.publish("SubscriptionHub.QuerySubscribed", {"plugin": instance.name, "target": target, "args": args})
-        event_result = event_result[0] if isinstance(event_result, list) else event_result
+        event_result = event_result[0] if isinstance(event_result, list) and event_result else event_result
         return event_result
 
 
