@@ -25,6 +25,7 @@ class TalkSystem:
         self._reply_queue = Queue()
         self._model = model
         self._memoticon_system = memoticon_system
+        self.output_queue = Queue()
 
     # FIXME: 这里的逻辑其实是有问题的，高并发应该减少调用次数，把多个内容合并到一个prompt后再发送，这样比较合理，并且模型可以更好的知道上下文
     # 暂时不想改了，等记忆系统搓出来再说吧
@@ -73,10 +74,12 @@ class TalkSystem:
                     log.info(f"过滤模型认为 {origin_msg} 不应输出，因为 {reply[6:]}")
                 if cmc.source_id:
                     log.info(f"发送消息到群组 {cmc.source_id}: {reply}，机器人目前心情: {emotion}")
+                    self.output_queue.put((cmc, reply))
                     asyncio.run(send_func("group", cmc.source_id, reply))
                     
                 else:
                     log.info(f"发送消息到私聊 {cmc.user_id}: {reply}，机器人目前心情: {emotion}")
+                    self.output_queue.put((cmc, reply))
                     asyncio.run(send_func("private", cmc.user_id, reply))
                     
             if cmc.source_id:

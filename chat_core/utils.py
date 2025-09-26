@@ -17,5 +17,15 @@ async def send_message(target: str, target_id: str, content: Optional[str] = Non
         await status.global_api.post_private_msg(target_id, content, image=image)
     else:
         raise ValueError("未知的消息发送目标")
+    
+
+def get_target_str(msg: BaseMessageEvent):
+    if msg.is_group_msg():
+        target = "G"+msg.group_id
+        user_card = msg.sender.card
+    else:
+        target = "P"+msg.user_id
+        user_card = ""
+    return target, user_card
 
     

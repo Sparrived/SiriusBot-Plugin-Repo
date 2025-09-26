@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import random
 import time
@@ -9,12 +8,14 @@ import requests
 from .sirius_chat_core.models import *
 from .sirius_chat_core.models.model_platform import *
 from .sirius_chat_core.willingness_system import *
+from .sirius_chat_core.memory_system import MemorySystem
 from sirius_core import SiriusPlugin
 from ncatbot.plugin_system import command_registry, on_message
 from ncatbot.core.event import BaseMessageEvent
 from ncatbot.utils import status
-from .utils import send_message, get_message_type
+from .utils import send_message, get_message_type, get_target_str
 from .sirius_chat_core.ego import TalkSystem, MemoticonSystem
+from .sirius_chat_core.utils import MessageUnit
 
 from typing import TypeVar
 
@@ -47,6 +48,7 @@ class ChatCore(SiriusPlugin):
                              )
         self.register_config("filter_mode", True, "是否启用过滤模型，启用后会通过过滤模型判断ChatModel输出是否合规", bool)
         self.register_config("water_group", True, "在没有/chat前缀时也有概率回复", bool) # 你这英语水平……
+        self.register_config("private_chat", True, "是否启用私聊", bool)
 
         model_selection = self.config["model_selection"]
 
@@ -67,59 +69,52 @@ class ChatCore(SiriusPlugin):
             self._log.error(f"模型加载失败: {e}")
             return
         
-        # ------- 注册相关系统 --------
+        # ------- 注册对话相关系统 --------
         self._memoticon_system = MemoticonSystem(self.workspace, self._memoticon_model)
         self._talk_system = TalkSystem(self._chat_model, self._memoticon_system)
+        self._memory_system = MemorySystem(self.workspace, self._talk_system, self._chat_model)
 
         # -------- 注册意愿计算器相关processor --------
-        # TODO: processor的开关
+        # TODO: processor的开关通过yaml进行设置
         w_calculator.register_processor(MentionProcessor())
+        w_calculator.register_processor(RandomProcessor())
+        w_calculator.register_processor(MemoryProcessor(self._memory_system))
 
-    async def chat(self, msg: BaseMessageEvent, message_context: MessageContext):
+    async def chat(self, message_context: MessageContext, message_unit: MessageUnit):
         """构建消息链，把chat丢到对话系统"""
-        mc = self._chat_model.create_initial_message_chain(message_context.message)
-        if msg.is_group_msg():
-            target = "G"+msg.group_id
-        else:
-            target = "P"+msg.user_id
-        if message_context.message_type in [MessageType.AT, MessageType.TEXT, MessageType.REPLY]:
-            msg = f"<message><user:{msg.sender.nickname}/><user_qqid:{msg.sender.user_id}/>{message_context.message}</message>"
-            message_context.message = msg
-        self._talk_system.create_talk(self._log, target, mc, message_context, send_message, self._filter_model if self.config["filter_mode"] else None)
+        mc = self._memory_system.get_context_chain(message_unit.target, 30)
 
-    # ------- 注册指令 --------
-    @command_registry.command("chat", description="和机器人对话，机器人一定会回复")
-    async def cmd_chat(self, msg: BaseMessageEvent, current_text: str):
-        """与机器人对话的指令"""
-        mc = MessageContext(
-            user_id=msg.user_id, 
-            source_id=msg.group_id if msg.is_group_msg() else None,
-            message=current_text,
-            message_type=MessageType.TEXT,
-            timestamp=int(time.time()),
-            mentioned_bot=False
-            )
-        await self.chat(msg, mc)
-    
+        if message_context.message_type in [MessageType.AT, MessageType.TEXT, MessageType.REPLY]:
+            message_context.message = str(message_unit)
+        self._talk_system.create_talk(self._log, message_unit.target, mc, message_context, send_message, self._filter_model if self.config["filter_mode"] else None)
+
     @on_message
     async def on_message(self, msg: BaseMessageEvent):
         """监听消息，根据意愿值决定是否回复"""
         if msg.is_group_msg():
             if not self.config.get("water_group", True):
                 return
+        else:
+            if not self.config.get("private_chat", True):
+                return
         
-        # -------- 表情包判别逻辑 --------
         if msg.message.filter_image():
             img = msg.message.filter_image()[0]
             response = requests.get(img.url)
             response.raise_for_status()
-            if random.random() <= 0.3:  # 30% 概率进行表情包注册逻辑
-                try:
-                    result = self._memoticon_system.judge_img(base64.b64encode(response.content).decode("utf-8"))
-                    if result:
-                        self._log.info(f"已注册表情包: {result}")
-                except Exception as e:
-                    self._log.error(f"表情包判别失败: {e}")
+            img_base64 = base64.b64encode(response.content).decode("utf-8")
+            
+            # TODO:图片进VLM识别，作为记忆存储，实在是不想写了，感觉先过一遍VLM会导致回复速度显著变慢，而且太吃token了，每张图片都要过一遍。
+            if not self._memoticon_system.has_resized_image(img_base64):
+                # -------- 学习表情包逻辑 --------
+                if random.random() <= 0.3:  # 30% 概率进行表情包注册逻辑
+                    try:
+                        result = self._memoticon_system.judge_img(img_base64)
+                        if result:
+                            self._log.info(f"已注册表情包: {result}")
+                    except Exception as e:
+                        self._log.error(f"表情包判别失败: {e}")
+            # 这里直接返回，不回复图片内容
             return
 
         # -------- 回复逻辑 --------
@@ -147,15 +142,26 @@ class ChatCore(SiriusPlugin):
             mentioned_bot=mentioned_bot
             )
         
+        # -------- 短期记忆存储 --------
+        target, user_card = get_target_str(msg)
+        mu = MessageUnit(msg.sender.nickname,
+                        msg.sender.user_id,
+                        mc.message,
+                        time.strftime("%Y年%m月%d日 %H:%M", time.localtime()), 
+                        target,
+                        user_card)
+        self._memory_system.add_short_term_memory(target, mu)
+
         result = await w_calculator.calculate_async(mc)
         self._log.debug(f"意愿值计算结果: {result}")
         if result["should_reply"]:
-            await self.chat(msg, mc)
+            await self.chat(mc, mu)
 
 
 
     async def on_unload(self):
         self._talk_system.dispose()
+
         # -------- 翻译模型 --------
         # if msg.raw_message.startswith("[CQ"):
         #     return

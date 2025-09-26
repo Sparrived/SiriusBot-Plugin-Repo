@@ -4,7 +4,9 @@ from .message_context import MessageContext, MessageType
 
 from .processors.parameter_processor import ParameterProcessor
 from .processors.mention_processor import MentionProcessor 
+from .processors.random_processor import RandomProcessor
+from .processors.memory_processor import MemoryProcessor
 
-__all__ = ["WillingnessCalculator", "w_calculator", 
-           "MessageContext", "MessageType", 
-           "ParameterProcessor", "MentionProcessor"]
+__all__ = ["WillingnessCalculator", "w_calculator",
+           "MessageContext", "MessageType",
+           "ParameterProcessor", "MentionProcessor", "RandomProcessor", "MemoryProcessor"]

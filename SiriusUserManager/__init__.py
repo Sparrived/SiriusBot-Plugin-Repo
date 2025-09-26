@@ -1,3 +1,3 @@
-from .main import SiriusUserManager
+# from .main import SiriusUserManager
 
-__all__ = ["SiriusUserManager"]
+# __all__ = ["SiriusUserManager"]

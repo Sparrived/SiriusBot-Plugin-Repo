@@ -35,7 +35,7 @@ class MemoticonSystem:
     
     def judge_img(self, img_base64: str) -> Optional[str]:
         """判断图片是否为表情包"""
-        img_base64 = self._resize_image(img_base64)
+        img_base64 = self.resize_image(img_base64)
         img_hash = hashlib.sha256(img_base64.encode()).hexdigest()
         conn = sqlite3.connect(self._db_path)
         c = conn.cursor()
@@ -49,9 +49,9 @@ class MemoticonSystem:
                 return self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
         return None
     
-    def _resize_image(self, img_path: str, max_edge: int = 128) -> str:
+    def resize_image(self, img_base64: str, max_edge: int = 128) -> str:
         """缩放图片，确保其在QQ内显示大小合理，返回base64编码。支持 GIF 和 JPG/PNG。"""
-        img_bytes = base64.b64decode(img_path)
+        img_bytes = base64.b64decode(img_base64)
         img = Image.open(BytesIO(img_bytes))
         w, h = img.size
         scale = min(max_edge / max(w, h), 1.0)
@@ -78,19 +78,33 @@ class MemoticonSystem:
             img_resized.save(buffer, format=img.format or "JPEG")
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
     
+    def calculate_hash(self, base64_str: str):
+        return hashlib.sha256(base64_str.encode()).hexdigest()
+    
+    def has_resized_image(self, base64_str: str) -> bool:
+        img_hash = self.calculate_hash(self.resize_image(base64_str))
+        return self.has_image(img_hash)
 
-    def save_image(self, base64_str: str, tags: str = "", description: str = "") -> Optional[str]:
-        tags = tags.replace("可爱", "喜悦")
-        # 计算图片哈希
-        img_hash = hashlib.sha256(base64_str.encode()).hexdigest()
-        img_path = os.path.join(self._img_dir, f"{img_hash}.jpg")
-        try:
+    def has_image(self, img_hash: str) -> bool:
             conn = sqlite3.connect(self._db_path)
             c = conn.cursor()
             c.execute('SELECT hash FROM memoticon WHERE hash=?', (img_hash,))
             if c.fetchone():
                 conn.close()
+                return True
+            conn.close()
+            return False
+
+    def save_image(self, base64_str: str, tags: str = "", description: str = "") -> Optional[str]:
+        tags = tags.replace("可爱", "喜悦")
+        # 计算图片哈希
+        img_hash = self.calculate_hash(base64_str)
+        img_path = os.path.join(self._img_dir, f"{img_hash}.jpg")
+        try:
+            if not self.has_image(img_hash):
                 return None
+            conn = sqlite3.connect(self._db_path)
+            c = conn.cursor()
             # 保存图片到本地
             with open(img_path, "wb") as f:
                 f.write(base64.b64decode(base64_str))

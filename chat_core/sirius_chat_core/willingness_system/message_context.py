@@ -11,7 +11,7 @@ class MessageType(Enum):
 
 @dataclass
 class MessageContext:
-    """消息上下文信息"""
+    """引发对话的消息上下文"""
     # 引发信息的用户ID
     user_id: str  
     # 信息来源，一般来说是群组号码

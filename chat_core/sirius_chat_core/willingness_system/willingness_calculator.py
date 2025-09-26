@@ -5,7 +5,7 @@ from .message_context import MessageContext
 
 class WillingnessCalculator:
     """意愿值计算器"""
-    def __init__(self, threshold: float = 0.5):
+    def __init__(self, threshold: float = 0.667):
         self._threshold = threshold
         self._processors: List[ParameterProcessor] = []
         self._history: List[Dict[str, Any]] = []

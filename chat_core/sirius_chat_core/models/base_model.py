@@ -41,10 +41,12 @@ class BaseModel:
         self._response_format = response_format
         self._platform = platform
 
-    def create_initial_message_chain(self, user_message: str, img_base64: Optional[str] = None) -> MessageChain:
+    def create_initial_message_chain(self, user_message: Optional[str] = None, img_base64: Optional[str] = None) -> MessageChain:
+        """创建初始消息链，如果传入其他参数则下一条信息应为助手消息，传入消息作为用户消息"""
         mcb = MessageChainBuilder()
         mcb.create_new_message_chain(self._system_prompt)
-        mcb.add_user_message(user_message, img_base64)
+        if user_message or img_base64:
+            mcb.add_user_message(user_message, img_base64)
         return mcb.build()
 
     def add_tool(self, func: FunctionType, desc: str = ""):
